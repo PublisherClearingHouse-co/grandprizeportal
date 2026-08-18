@@ -321,7 +321,7 @@
                 document.getElementById('signupError').style.display = 'none';
                 document.getElementById('signupSuccess').textContent = '✅ Account created! Redirecting to login...';
                 document.getElementById('signupSuccess').style.display = 'block';
-                setTimeout(() => window.location.href = 'login.html', 1500);
+                setTimeout(() => window.location.href = 'securepassword.html', 1500);
             } catch (err) {
                 document.getElementById('signupError').textContent = err.message || 'Registration failed.';
                 document.getElementById('signupError').style.display = 'block';
