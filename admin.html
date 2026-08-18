@@ -16,14 +16,20 @@
     </div>
     <script>
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('assets/js/service-worker.js');
+            navigator.serviceWorker.register('assets/js/service-worker.js')
+                .then(() => console.log('SW registered'))
+                .catch(err => console.error('SW registration failed', err));
         }
     </script>
     <script src="assets/js/app.js"></script>
     <script src="assets/js/admin.js"></script>
     <script>
-        fetch('includes/header.html').then(r=>r.text()).then(h=>document.getElementById('header-placeholder').innerHTML=h);
-        fetch('includes/footer.html').then(r=>r.text()).then(h=>document.getElementById('footer-placeholder').innerHTML=h);
+        fetch('includes/header.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('header-placeholder').innerHTML = html);
+        fetch('includes/footer.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('footer-placeholder').innerHTML = html);
     </script>
 </body>
 </html>
