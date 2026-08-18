@@ -1,0 +1,9 @@
+{
+  "name": "PCH Winners Portal",
+  "short_name": "PCH",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0b0b1a",
+  "theme_color": "#ffd700",
+  "icons": []
+}

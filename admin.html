@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PCH – Admin Portal</title>
+    <link rel="manifest" href="manifest.json" />
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="pch-container">
+        <div id="header-placeholder"></div>
+        <div id="main-content" class="mt-16"></div>
+        <div id="footer-placeholder"></div>
+    </div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('assets/js/service-worker.js');
+        }
+    </script>
+    <script src="assets/js/app.js"></script>
+    <script src="assets/js/admin.js"></script>
+    <script>
+        fetch('includes/header.html').then(r=>r.text()).then(h=>document.getElementById('header-placeholder').innerHTML=h);
+        fetch('includes/footer.html').then(r=>r.text()).then(h=>document.getElementById('footer-placeholder').innerHTML=h);
+    </script>
+</body>
+</html>

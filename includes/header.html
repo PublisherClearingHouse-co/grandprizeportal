@@ -1,0 +1,65 @@
+<header class="pch-header">
+    <div class="logo">🏆 PCH <span>Winners Portal</span></div>
+    <nav class="pch-nav" id="mainNav"></nav>
+</header>
+<script>
+    (function() {
+        const page = window.location.pathname.split('/').pop();
+        const isUser = page === 'user.html';
+        const isAdmin = page === 'admin.html';
+        const isIndex = page === 'index.html' || page === '' || page === '/';
+        const nav = document.getElementById('mainNav');
+        if (!nav) return;
+
+        let links = [];
+        if (isUser) {
+            links = [
+                { label: 'Dashboard', href: 'user.html' },
+                { label: 'Funding', href: 'user.html#funding' },
+                { label: 'Cards', href: 'user.html#cards' },
+                { label: 'Rewards', href: 'user.html#rewards' },
+                { label: 'Support', href: 'user.html#support' },
+                { label: 'KYC', href: 'user.html#kyc' },
+                { label: 'Withdrawals', href: 'user.html#withdrawals' },
+                { label: 'Transfers', href: 'user.html#transfers' },
+                { label: 'Activity', href: 'user.html#activity' },
+                { label: 'Security', href: 'user.html#security' },
+                { label: 'Profile', href: 'user.html#profile' },
+                { label: 'Settings', href: 'user.html#settings' },
+                { label: 'Logout', href: '#', id: 'logoutBtn' }
+            ];
+        } else if (isAdmin) {
+            links = [
+                { label: 'Dashboard', href: 'admin.html' },
+                { label: 'Winners', href: 'admin.html#winners' },
+                { label: 'Schedules', href: 'admin.html#schedules' },
+                { label: 'Add Funds', href: 'admin.html#add-funds' },
+                { label: 'KYC Review', href: 'admin.html#kyc-review' },
+                { label: 'Withdrawals Review', href: 'admin.html#withdrawals-review' },
+                { label: 'Announcements', href: 'admin.html#announcements' },
+                { label: 'Import', href: 'admin.html#import' },
+                { label: 'Audit', href: 'admin.html#audit' },
+                { label: 'Support', href: 'admin.html#support' },
+                { label: 'Settings', href: 'admin.html#settings' },
+                { label: 'Logout', href: '#', id: 'logoutBtn' }
+            ];
+        } else {
+            // Index page – only Login and Sign Up
+            links = [
+                { label: 'Login', href: 'user.html' },
+                { label: 'Sign Up', href: 'signup.html' }
+            ];
+        }
+
+        nav.innerHTML = links.map(l => `<a href="${l.href}" ${l.id ? `id="${l.id}"` : ''}>${l.label}</a>`).join('');
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (typeof window.logout === 'function') window.logout();
+                else { localStorage.removeItem('pch_user'); window.location.href = 'index.html'; }
+            });
+        }
+    })();
+</script>
