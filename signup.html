@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up – PCH Winners Portal</title>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <style>
+        /* Terms Modal Styles */
+        .terms-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 99999;
+            padding: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+        .terms-modal.active {
+            display: flex;
+        }
+        .terms-modal .modal-content {
+            background: #1a1a3e;
+            border-radius: 20px;
+            padding: 32px 40px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8);
+            animation: fadeUp 0.4s ease;
+        }
+        .terms-modal .modal-content h2 {
+            color: #ffd700;
+            font-size: 28px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
+        }
+        .terms-modal .modal-content .close-btn {
+            float: right;
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            font-size: 30px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .terms-modal .modal-content .close-btn:hover {
+            transform: scale(1.2);
+        }
+        .terms-modal .modal-content .terms-body {
+            color: #d0d0e0;
+            font-size: 14px;
+            line-height: 1.8;
+            text-align: justify;
+        }
+        .terms-modal .modal-content .terms-body h3 {
+            color: #ffd700;
+            font-size: 18px;
+            margin-top: 20px;
+            margin-bottom: 6px;
+        }
+        .terms-modal .modal-content .terms-body p {
+            margin-bottom: 10px;
+        }
+        .terms-modal .modal-content .terms-body ul {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+        .terms-modal .modal-content .terms-body ul li {
+            margin-bottom: 4px;
+        }
+        .terms-modal .modal-content .agree-btn {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin-top: 20px;
+            background: #ffd700;
+            color: #0b0b1a;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .terms-modal .modal-content .agree-btn:hover {
+            background: #f0c000;
+            transform: scale(1.02);
+        }
+        @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        @media (max-width: 600px) {
+            .terms-modal .modal-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="pch-container">
+        <div id="header-placeholder"></div>
+
+        <div style="max-width:600px;margin:40px auto;">
+            <div class="card">
+                <h2 style="color:#ffd700;text-align:center;">📝 Sign Up</h2>
+                <p class="text-muted" style="text-align:center;margin-bottom:16px;">Create your PCH Winners Portal account</p>
+
+                <div id="signupError" class="text-danger" style="display:none;text-align:center;margin-bottom:10px;"></div>
+                <div id="signupSuccess" class="text-success" style="display:none;text-align:center;margin-bottom:10px;"></div>
+
+                <form id="signupForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>First Name *</label>
+                            <input type="text" id="sigFirstName" placeholder="John" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Last Name *</label>
+                            <input type="text" id="sigLastName" placeholder="Doe" required />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>📧 Email *</label>
+                        <input type="email" id="sigEmail" placeholder="your@email.com" required />
+                    </div>
+                    <div class="form-group">
+                        <label>📱 Phone</label>
+                        <input type="text" id="sigPhone" placeholder="(555) 555-5555" />
+                    </div>
+                    <div class="form-group">
+                        <label>📍 Address</label>
+                        <input type="text" id="sigAddress" placeholder="123 Main St, City, State, ZIP" />
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>🔒 Password *</label>
+                            <input type="password" id="sigPassword" placeholder="Min 6 characters" required />
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password *</label>
+                            <input type="password" id="sigConfirm" placeholder="Confirm password" required />
+                        </div>
+                    </div>
+                    <div style="margin:12px 0;">
+                        <label style="display:flex;align-items:center;gap:8px;color:#8888aa;font-size:13px;cursor:pointer;">
+                            <input type="checkbox" id="sigTerms" style="accent-color:#ffd700;width:18px;height:18px;" required />
+                            I agree to the <a href="#" id="termsLink" style="color:#ffd700;text-decoration:none;">Terms of Service</a>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-gold btn-block">🚀 Create Account</button>
+                </form>
+
+                <div style="text-align:center;margin-top:14px;font-size:13px;color:#8888aa;">
+                    Already have an account? <a href="login.html" style="color:#ffd700;text-decoration:none;">Login</a>
+                </div>
+                <div style="text-align:center;margin-top:4px;font-size:12px;color:#555;">
+                    <a href="index.html" style="color:#666;text-decoration:none;">🏠 Back to Home</a>
+                </div>
+            </div>
+        </div>
+
+        <div id="footer-placeholder"></div>
+    </div>
+
+    <!-- ===== TERMS OF SERVICE MODAL ===== -->
+    <div class="terms-modal" id="termsModal">
+        <div class="modal-content">
+            <button class="close-btn" id="termsCloseBtn">&times;</button>
+            <h2>📜 Terms of Service</h2>
+            <div class="terms-body">
+                <p><strong>Last Updated:</strong> August 18, 2026</p>
+                <p>Welcome to the Publishers Clearing House Winners Portal. By creating an account and using our services, you agree to the following terms and conditions. Please read them carefully.</p>
+
+                <h3>1. Acceptance of Terms</h3>
+                <p>By registering for a Winners Portal account, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service, our Privacy Policy, and any other policies referenced herein. If you do not agree, you must not create an account or use the Portal.</p>
+
+                <h3>2. Eligibility</h3>
+                <p>You must be at least 18 years of age and a legal resident of the United States to register. By signing up, you represent that you meet these requirements and that all information you provide is truthful and accurate.</p>
+
+                <h3>3. Account and Security</h3>
+                <p>You are solely responsible for maintaining the confidentiality of your login credentials and for any activity that occurs under your account. You agree to notify us immediately of any unauthorized use or breach of security. We reserve the right to suspend or terminate accounts that violate these terms or pose a security risk.</p>
+
+                <h3>4. Winner Funds and Rewards</h3>
+                <p>Your account may reflect prize funds, rewards, and bonuses as awarded by Publishers Clearing House. These funds are not actual currency unless explicitly stated. You may withdraw eligible funds only through the withdrawal methods provided, subject to applicable verification and approval processes. We reserve the right to adjust or reverse any funds credited in error.</p>
+
+                <h3>5. Weekly Funding</h3>
+                <p>Qualified winners may receive weekly or monthly funding as determined by their account tier and active schedules. Funding amounts and schedules are subject to change at the sole discretion of Publishers Clearing House. Automated funding is processed on Fridays (for weekly schedules) and on the 1st of each month (for monthly schedules), but we do not guarantee exact timing.</p>
+
+                <h3>6. Prohibited Activities</h3>
+                <p>You agree not to:</p>
+                <ul>
+                    <li>Use the Portal for any unlawful purpose or in any way that could damage, disable, or impair the service.</li>
+                    <li>Attempt to gain unauthorized access to any part of the Portal or other users' accounts.</li>
+                    <li>Interfere with the proper functioning of the funding engine or any automated processes.</li>
+                    <li>Provide false or misleading information, including impersonation.</li>
+                    <li>Engage in any activity that would constitute fraud, money laundering, or any financial crime.</li>
+                </ul>
+
+                <h3>7. Privacy and Data Protection</h3>
+                <p>Your privacy is important to us. We collect and process personal data in accordance with our Privacy Policy. By using the Portal, you consent to our collection and use of your data as described therein. We do not sell your personal information to third parties.</p>
+
+                <h3>8. Intellectual Property</h3>
+                <p>All content, logos, trademarks, and software on this Portal are the property of Publishers Clearing House or its licensors and are protected by copyright and other intellectual property laws. You may not reproduce, distribute, or create derivative works without express written permission.</p>
+
+                <h3>9. Disclaimers</h3>
+                <p>The Portal is provided "as is" and "as available." We do not warrant that the service will be uninterrupted, error‑free, or secure. To the fullest extent permitted by law, we disclaim all warranties, express or implied, including fitness for a particular purpose and non‑infringement.</p>
+
+                <h3>10. Limitation of Liability</h3>
+                <p>To the maximum extent permitted by law, Publishers Clearing House shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising out of or related to your use of the Portal, including loss of profits, data, or goodwill, even if we have been advised of the possibility of such damages.</p>
+
+                <h3>11. Governing Law</h3>
+                <p>These Terms shall be governed by and construed in accordance with the laws of the State of New York, without regard to its conflict of law provisions. Any legal action arising from these Terms shall be brought exclusively in the state or federal courts located in New York.</p>
+
+                <h3>12. Changes to Terms</h3>
+                <p>We reserve the right to modify these Terms at any time. We will notify you of material changes via email or through the Portal. Your continued use after such changes constitutes your acceptance of the new terms.</p>
+
+                <h3>13. Contact Information</h3>
+                <p>If you have any questions about these Terms, please contact us at:</p>
+                <p><strong>Publishers Clearing House</strong><br />
+                300 Jericho Quadrangle, Suite 300<br />
+                Jericho, NY 11753<br />
+                Email: <a href="mailto:support@pch-winners.com" style="color:#ffd700;">support@pch-winners.com</a><br />
+                Phone: 1-270-681-2040</p>
+            </div>
+            <button class="agree-btn" id="termsAgreeBtn">✅ I Agree</button>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+    <script>
+        // Load header/footer
+        fetch('includes/header.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('header-placeholder').innerHTML = html);
+        fetch('includes/footer.html')
+            .then(r => r.text())
+            .then(html => document.getElementById('footer-placeholder').innerHTML = html);
+
+        // ---- Terms Modal ----
+        const modal = document.getElementById('termsModal');
+        const termsLink = document.getElementById('termsLink');
+        const closeBtn = document.getElementById('termsCloseBtn');
+        const agreeBtn = document.getElementById('termsAgreeBtn');
+
+        function openModal() {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+        function closeModal() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        termsLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            openModal();
+        });
+        closeBtn.addEventListener('click', closeModal);
+        agreeBtn.addEventListener('click', function() {
+            closeModal();
+            // Optionally check the checkbox
+            document.getElementById('sigTerms').checked = true;
+        });
+        // Click outside to close
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) closeModal();
+        });
+
+        // ---- Signup logic ----
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const firstName = document.getElementById('sigFirstName').value.trim();
+            const lastName = document.getElementById('sigLastName').value.trim();
+            const email = document.getElementById('sigEmail').value.trim();
+            const phone = document.getElementById('sigPhone').value.trim();
+            const address = document.getElementById('sigAddress').value.trim();
+            const password = document.getElementById('sigPassword').value;
+            const confirm = document.getElementById('sigConfirm').value;
+            const terms = document.getElementById('sigTerms').checked;
+
+            if (!firstName || !lastName || !email || !password || !confirm) {
+                document.getElementById('signupError').textContent = 'Please fill in all required fields.';
+                document.getElementById('signupError').style.display = 'block';
+                return;
+            }
+            if (password !== confirm) {
+                document.getElementById('signupError').textContent = 'Passwords do not match.';
+                document.getElementById('signupError').style.display = 'block';
+                return;
+            }
+            if (password.length < 6) {
+                document.getElementById('signupError').textContent = 'Password must be at least 6 characters.';
+                document.getElementById('signupError').style.display = 'block';
+                return;
+            }
+            if (!terms) {
+                document.getElementById('signupError').textContent = 'You must agree to the Terms of Service.';
+                document.getElementById('signupError').style.display = 'block';
+                return;
+            }
+
+            const userData = {
+                firstName,
+                lastName,
+                email,
+                phone: phone || '',
+                address: address || '',
+                password
+            };
+
+            try {
+                const newUser = signup(userData);
+                document.getElementById('signupError').style.display = 'none';
+                document.getElementById('signupSuccess').textContent = '✅ Account created! Redirecting to login...';
+                document.getElementById('signupSuccess').style.display = 'block';
+                setTimeout(() => window.location.href = 'login.html', 1500);
+            } catch (err) {
+                document.getElementById('signupError').textContent = err.message || 'Registration failed.';
+                document.getElementById('signupError').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
