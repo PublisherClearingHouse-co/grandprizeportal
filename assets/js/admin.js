@@ -3,8 +3,14 @@
 // =============================================
 (function() {
     const user = getCurrentUser();
-    if (!user) { window.location.href = 'index.html'; return; }
-    if (user.role !== 'admin' && user.role !== 'super_admin') { window.location.href = 'user.html'; return; }
+    if (!user) {
+        window.location.href = 'index.html';
+        return;
+    }
+    if (user.role !== 'admin' && user.role !== 'super_admin') {
+        window.location.href = 'user.html';
+        return;
+    }
 
     const main = document.getElementById('main-content');
     if (!main) return;
@@ -37,6 +43,7 @@
         const schedules = getFundingSchedules().filter(s => s.status === 'active');
         const pendingKyc = getKyc().filter(k => k.status === 'pending').length;
         const pendingWithdrawals = getWithdrawals().filter(w => w.status === 'pending').length;
+
         main.innerHTML = `
             <h2>🔧 Admin Dashboard</h2>
             <div class="grid-4 mb-24">
@@ -196,9 +203,9 @@
                             <div><span class="badge badge-warning">Pending</span></div>
                         </div>
                         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:8px 0;">
-                            <img src="${k.frontImage}" style="max-width:100%;max-height:120px;border-radius:8px;" />
-                            <img src="${k.backImage}" style="max-width:100%;max-height:120px;border-radius:8px;" />
-                            <img src="${k.selfieImage}" style="max-width:100%;max-height:120px;border-radius:8px;" />
+                            ${k.frontImage ? `<img src="${k.frontImage}" style="max-width:100%;max-height:120px;border-radius:8px;" />` : '<div style="color:#666;padding:10px;">No front image</div>'}
+                            ${k.backImage ? `<img src="${k.backImage}" style="max-width:100%;max-height:120px;border-radius:8px;" />` : '<div style="color:#666;padding:10px;">No back image</div>'}
+                            ${k.selfieImage ? `<img src="${k.selfieImage}" style="max-width:100%;max-height:120px;border-radius:8px;" />` : '<div style="color:#666;padding:10px;">No selfie</div>'}
                         </div>
                         <div>
                             <button class="btn btn-success btn-sm" onclick="window.approveKyc(${k.id})">✅ Approve</button>
@@ -263,14 +270,12 @@
             const idx = withdrawals.findIndex(w => w.id === id);
             if (idx !== -1) {
                 withdrawals[idx].status = 'approved';
-                // Deduct balance
                 const w = withdrawals[idx];
                 const users = getUsers();
                 const uIdx = users.findIndex(u => u.id === w.userId);
                 if (uIdx !== -1) {
                     const total = users[uIdx].balance + users[uIdx].prize_amount;
                     if (total >= w.amount) {
-                        // Deduct from balance first, then prize_amount
                         let remaining = w.amount;
                         if (users[uIdx].balance >= remaining) {
                             users[uIdx].balance -= remaining;
@@ -280,7 +285,6 @@
                             users[uIdx].prize_amount -= remaining;
                         }
                         setUsers(users);
-                        // Funding record for withdrawal
                         const funding = getFundingRecords();
                         funding.push({
                             id: Date.now(),
@@ -293,7 +297,6 @@
                             createdAt: new Date().toISOString()
                         });
                         setFundingRecords(funding);
-                        // Notification
                         const notifs = getNotifications();
                         notifs.push({
                             id: Date.now(),
@@ -380,7 +383,7 @@
                     <div class="form-group"><label>File (CSV/TXT/XML/PDF)</label><input type="file" id="importFile" accept=".csv,.txt,.xml,.pdf" required /></div>
                     <button type="submit" class="btn btn-gold">Import Users</button>
                 </form>
-                <div id="importResult"></div>
+                <div id="importResult" class="mt-16"></div>
             </div>
         `;
         document.getElementById('importForm').addEventListener('submit', function(e) {
@@ -392,7 +395,6 @@
             reader.onload = function(ev) {
                 const content = ev.target.result;
                 let rows = [];
-                // Simple CSV parsing (for demo)
                 const lines = content.split('\n').filter(l => l.trim());
                 if (lines.length < 2) { alert('File must contain header row and data.'); return; }
                 const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
