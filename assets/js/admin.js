@@ -1,20 +1,15 @@
 // =============================================
-// admin.js – Admin Portal (ALL features)
+// ADMIN.JS – Admin Portal Application
 // =============================================
+
 (function() {
-    const user = getCurrentUser();
-    if (!user) {
-        window.location.href = 'index.html';
-        return;
-    }
-    if (user.role !== 'admin' && user.role !== 'super_admin') {
-        window.location.href = 'user.html';
-        return;
-    }
+    // ---- Check authentication ----
+    if (!AuthService.requireAdmin()) return;
 
     const main = document.getElementById('main-content');
     if (!main) return;
 
+    // ---- Render based on hash ----
     function render() {
         const hash = window.location.hash.replace('#', '') || 'dashboard';
         switch(hash) {
@@ -22,30 +17,29 @@
             case 'winners': renderWinners(); break;
             case 'schedules': renderSchedules(); break;
             case 'add-funds': renderAddFunds(); break;
-            case 'audit': renderAudit(); break;
-            case 'support': renderAdminSupport(); break;
-            case 'settings': renderSettings(); break;
             case 'kyc-review': renderKycReview(); break;
             case 'withdrawals-review': renderWithdrawalsReview(); break;
             case 'announcements': renderAnnouncements(); break;
             case 'import': renderImport(); break;
+            case 'audit': renderAudit(); break;
+            case 'support': renderAdminSupport(); break;
+            case 'settings': renderSettings(); break;
             default: renderDashboard();
         }
     }
 
-    // ---- Dashboard with charts ----
+    // ---- Dashboard ----
     function renderDashboard() {
-        const users = getUsers();
+        const users = UserService.getUsers();
         const total = users.filter(u => u.role === 'user').length;
         const active = users.filter(u => u.role === 'user' && u.status === 'active').length;
         const vip = users.filter(u => u.role === 'user' && u.vip_level !== 'Standard').length;
         const totalFunds = users.reduce((sum, u) => sum + u.balance + u.prize_amount, 0);
-        const schedules = getFundingSchedules().filter(s => s.status === 'active');
-        const pendingKyc = getKyc().filter(k => k.status === 'pending').length;
-        const pendingWithdrawals = getWithdrawals().filter(w => w.status === 'pending').length;
+        const schedules = ScheduleService.getAll().filter(s => s.status === 'active');
+        const pendingKyc = KycService.getPending().length;
+        const pendingWithdrawals = WithdrawalService.getPending().length;
 
         main.innerHTML = `
-            <h2>🔧 Admin Dashboard</h2>
             <div class="grid-4 mb-24">
                 <div class="stat-card"><div class="number">${total}</div><div class="label">Total Winners</div></div>
                 <div class="stat-card"><div class="number">${active}</div><div class="label">Active</div></div>
@@ -79,7 +73,7 @@
             </div>
             <div class="card">
                 <h4 style="color:#ffd700;">Recent Audit Events</h4>
-                ${getAuditLogs().slice(0,5).map(log => `
+                ${DataService.getAuditLogs().slice(0,5).map(log => `
                     <div class="flex-between" style="padding:6px 0;border-bottom:1px solid #1a1a3e;">
                         <span>${log.event}</span>
                         <span class="text-muted">${log.actor}</span>
@@ -91,7 +85,7 @@
         // Charts
         setTimeout(() => {
             const vipCtx = document.getElementById('vipChart');
-            if (vipCtx) {
+            if (vipCtx && typeof Chart !== 'undefined') {
                 const vipCounts = {};
                 users.filter(u => u.role === 'user').forEach(u => { vipCounts[u.vip_level] = (vipCounts[u.vip_level] || 0) + 1; });
                 new Chart(vipCtx, {
@@ -101,14 +95,14 @@
                 });
             }
             const txCtx = document.getElementById('txChart');
-            if (txCtx) {
+            if (txCtx && typeof Chart !== 'undefined') {
                 const now = new Date();
                 const last30 = [];
                 for (let i = 29; i >= 0; i--) {
                     const d = new Date(now);
                     d.setDate(d.getDate() - i);
                     const dateStr = d.toISOString().slice(0,10);
-                    const total = getFundingRecords().filter(f => f.createdAt.startsWith(dateStr)).reduce((s, f) => s + f.amount, 0);
+                    const total = DataService.getFundingRecords().filter(f => f.createdAt.startsWith(dateStr)).reduce((s, f) => s + f.amount, 0);
                     last30.push(total);
                 }
                 new Chart(txCtx, {
@@ -120,14 +114,14 @@
         }, 200);
     }
 
-    // ---- Winners with search/filter ----
+    // ---- Winners Management ----
     function renderWinners() {
-        const users = getUsers().filter(u => u.role === 'user');
+        const users = UserService.getWinners();
         main.innerHTML = `
             <h2>👤 Winners</h2>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-                <input type="text" id="winnerSearch" placeholder="Search name, email, ID" oninput="window.filterWinners()" style="flex:1;min-width:200px;padding:8px;border-radius:8px;border:2px solid #2a2a5a;background:#0f0f22;color:#fff;" />
-                <select id="vipFilter" onchange="window.filterWinners()" style="padding:8px;border-radius:8px;border:2px solid #2a2a5a;background:#0f0f22;color:#fff;">
+                <input type="text" id="winnerSearch" placeholder="Search name, email, ID" oninput="filterWinners()" style="flex:1;min-width:200px;padding:8px;border-radius:8px;border:2px solid #2a2a5a;background:#0f0f22;color:#fff;" />
+                <select id="vipFilter" onchange="filterWinners()" style="padding:8px;border-radius:8px;border:2px solid #2a2a5a;background:#0f0f22;color:#fff;">
                     <option value="">All VIP</option>
                     <option value="Standard">Standard</option>
                     <option value="VIP">VIP</option>
@@ -135,7 +129,7 @@
                     <option value="VIP Platinum">VIP Platinum</option>
                     <option value="VIP Elite">VIP Elite</option>
                 </select>
-                <select id="statusFilter" onchange="window.filterWinners()" style="padding:8px;border-radius:8px;border:2px solid #2a2a5a;background:#0f0f22;color:#fff;">
+                <select id="statusFilter" onchange="filterWinners()" style="padding:8px;border-radius:8px;border:2px solid #2a2a5a;background:#0f0f22;color:#fff;">
                     <option value="">All Status</option>
                     <option value="active">Active</option>
                     <option value="suspended">Suspended</option>
@@ -152,17 +146,13 @@
                                     <td>${u.firstName} ${u.lastName}</td>
                                     <td>${u.email}</td>
                                     <td>$${(u.balance + u.prize_amount).toFixed(2)}</td>
-                                    <td><select onchange="window.changeVIP(${u.id}, this.value)" class="form-control" style="background:#0f0f22;color:#fff;border:1px solid #2a2a5a;padding:4px 8px;border-radius:4px;">
-                                        <option value="Standard" ${u.vip_level==='Standard'?'selected':''}>Standard</option>
-                                        <option value="VIP" ${u.vip_level==='VIP'?'selected':''}>VIP</option>
-                                        <option value="VIP Gold" ${u.vip_level==='VIP Gold'?'selected':''}>VIP Gold</option>
-                                        <option value="VIP Platinum" ${u.vip_level==='VIP Platinum'?'selected':''}>VIP Platinum</option>
-                                        <option value="VIP Elite" ${u.vip_level==='VIP Elite'?'selected':''}>VIP Elite</option>
+                                    <td><select onchange="changeVIP(${u.id}, this.value)" class="form-control" style="background:#0f0f22;color:#fff;border:1px solid #2a2a5a;padding:4px 8px;border-radius:4px;">
+                                        ${APP_CONFIG.VIP_LEVELS.map(l => `<option value="${l}" ${u.vip_level===l?'selected':''}>${l}</option>`).join('')}
                                     </select></td>
                                     <td><span class="badge badge-${u.status==='active'?'success':'danger'}">${u.status}</span></td>
                                     <td>
-                                        <button class="btn btn-secondary btn-sm" onclick="window.viewWinner(${u.id})">View</button>
-                                        <button class="btn btn-danger btn-sm" onclick="window.suspendUser(${u.id})">Suspend</button>
+                                        <button class="btn btn-secondary btn-sm" onclick="viewWinner(${u.id})">View</button>
+                                        <button class="btn btn-danger btn-sm" onclick="suspendUser(${u.id})">Suspend</button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -171,6 +161,7 @@
                 </div>
             </div>
         `;
+        // Setup filter function
         window.filterWinners = function() {
             const search = document.getElementById('winnerSearch').value.toLowerCase();
             const vip = document.getElementById('vipFilter').value;
@@ -189,13 +180,175 @@
         };
     }
 
+    // ---- VIP Change ----
+    window.changeVIP = function(userId, newLevel) {
+        try {
+            UserService.updateUser(userId, { vip_level: newLevel });
+            UI.showToast(`VIP level updated to ${newLevel}`, 'success');
+            renderWinners();
+        } catch (e) {
+            UI.showToast(e.message, 'error');
+        }
+    };
+
+    // ---- Suspend User ----
+    window.suspendUser = async function(id) {
+        const confirm = await UI.confirm('Suspend this user?', 'Confirm Suspension');
+        if (!confirm) return;
+        try {
+            UserService.updateUser(id, { status: 'suspended' });
+            UI.showToast('User suspended.', 'success');
+            renderWinners();
+        } catch (e) {
+            UI.showToast(e.message, 'error');
+        }
+    };
+
+    // ---- View Winner ----
+    window.viewWinner = function(userId) {
+        const u = UserService.getUser(userId);
+        if (!u) return UI.showToast('User not found', 'error');
+        const funds = TransactionService.getTransactions(userId);
+        const modal = UI.showModal({
+            title: `👤 ${u.firstName} ${u.lastName}`,
+            body: `
+                <p>Email: ${u.email} • VIP: ${u.vip_level} • Status: ${u.status}</p>
+                <p>Balance: $${(u.balance+u.prize_amount).toFixed(2)}</p>
+                <h4 style="color:#ffd700;margin-top:12px;">Funding History</h4>
+                <div style="max-height:300px;overflow-y:auto;">
+                    ${funds.map(f => `
+                        <div class="flex-between" style="padding:6px 0;border-bottom:1px solid #1a1a3e;cursor:pointer;" onclick="UI.closeModal(); showTransactionDetail(${f.id})">
+                            <span>${f.description}</span>
+                            <span>$${f.amount.toFixed(2)}</span>
+                            <span class="text-muted">${new Date(f.createdAt).toLocaleDateString()}</span>
+                        </div>
+                    `).join('') || '<p class="text-muted">No funding.</p>'}
+                </div>
+            `,
+            buttons: [{ label: 'Close', class: 'btn-secondary', action: 'close' }],
+            callbacks: { close: () => UI.closeModal() }
+        });
+        AuthService._audit('ADMIN_VIEWED_WINNER', `Admin viewed winner ${u.email}`, userId);
+    };
+
+    // ---- Transaction Detail (Admin) ----
+    window.showTransactionDetail = function(id) {
+        const fund = TransactionService.getTransaction(id);
+        if (!fund) return UI.showToast('Transaction not found', 'error');
+        const user = UserService.getUser(fund.userId);
+        UI.showModal({
+            title: '📄 Transaction Details',
+            body: `
+                <div class="detail-row"><span class="label">ID</span><span class="value">${fund.id}</span></div>
+                <div class="detail-row"><span class="label">User</span><span class="value">${user ? user.email : 'Unknown'}</span></div>
+                <div class="detail-row"><span class="label">Date</span><span class="value">${new Date(fund.createdAt).toLocaleString()}</span></div>
+                <div class="detail-row"><span class="label">Amount</span><span class="value">$${fund.amount.toFixed(2)}</span></div>
+                <div class="detail-row"><span class="label">Type</span><span class="value">${fund.type}</span></div>
+                <div class="detail-row"><span class="label">Description</span><span class="value">${fund.description}</span></div>
+                <div class="detail-row"><span class="label">Status</span><span class="value"><span class="badge badge-${fund.status==='completed'?'success':'warning'}">${fund.status}</span></span></div>
+            `,
+            buttons: [{ label: 'Close', class: 'btn-secondary', action: 'close' }],
+            callbacks: { close: () => UI.closeModal() }
+        });
+        AuthService._audit('ADMIN_VIEWED_TRANSACTION', `Admin viewed transaction ${id}`, null);
+    };
+
+    // ---- Schedules ----
+    function renderSchedules() {
+        const schedules = ScheduleService.getAll();
+        main.innerHTML = `
+            <h2>📅 Funding Schedules</h2>
+            <div class="card">
+                <h4 style="color:#ffd700;">Create Schedule</h4>
+                <form id="scheduleForm">
+                    <div class="form-group"><label>Name</label><input type="text" id="scheduleName" value="Weekly Friday Funding" required /></div>
+                    <div class="form-group"><label>Amount ($)</label><input type="number" id="scheduleAmount" value="7000" step="1" required /></div>
+                    <div class="form-group"><label>Frequency</label>
+                        <select id="scheduleFrequency">
+                            <option value="weekly">Weekly (Friday)</option>
+                            <option value="monthly">Monthly (1st)</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-gold">Create Schedule</button>
+                </form>
+            </div>
+            <div class="card mt-16">
+                <h4 style="color:#ffd700;">Existing Schedules</h4>
+                ${schedules.map(s => `
+                    <div class="flex-between" style="padding:8px 0;border-bottom:1px solid #1a1a3e;">
+                        <span>${s.name} – $${s.amount} (${s.frequency})</span>
+                        <span class="badge badge-${s.status==='active'?'success':'danger'}">${s.status}</span>
+                        <button class="btn btn-secondary btn-sm" onclick="toggleSchedule(${s.id})">${s.status==='active'?'Pause':'Resume'}</button>
+                    </div>
+                `).join('') || '<p class="text-muted">No schedules.</p>'}
+            </div>
+        `;
+        document.getElementById('scheduleForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('scheduleName').value;
+            const amount = parseFloat(document.getElementById('scheduleAmount').value);
+            const frequency = document.getElementById('scheduleFrequency').value;
+            try {
+                ScheduleService.create(name, amount, frequency);
+                UI.showToast('Schedule created!', 'success');
+                renderSchedules();
+            } catch (err) {
+                UI.showToast(err.message, 'error');
+            }
+        });
+    }
+
+    window.toggleSchedule = function(id) {
+        try {
+            ScheduleService.toggle(id);
+            UI.showToast('Schedule toggled.', 'success');
+            renderSchedules();
+        } catch (err) {
+            UI.showToast(err.message, 'error');
+        }
+    };
+
+    // ---- Add Funds ----
+    function renderAddFunds() {
+        const users = UserService.getWinners();
+        main.innerHTML = `
+            <h2>💰 Add Funds</h2>
+            <div class="card">
+                <form id="addFundsForm">
+                    <div class="form-group"><label>Select Winner</label>
+                        <select id="fundUser">
+                            ${users.map(u => `<option value="${u.id}">${u.firstName} ${u.lastName} (${u.email})</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Amount ($)</label><input type="number" id="fundAmount" step="0.01" required /></div>
+                    <div class="form-group"><label>Description</label><input type="text" id="fundDesc" placeholder="Reason" /></div>
+                    <button type="submit" class="btn btn-gold">Add Funds</button>
+                </form>
+            </div>
+        `;
+        document.getElementById('addFundsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const userId = parseInt(document.getElementById('fundUser').value);
+            const amount = parseFloat(document.getElementById('fundAmount').value);
+            const desc = document.getElementById('fundDesc').value || 'Manual addition';
+            if (!amount || amount <= 0) return UI.showToast('Enter a valid amount.', 'error');
+            try {
+                FundsService.addFunds(userId, amount, 'manual', desc);
+                UI.showToast('Funds added!', 'success');
+                renderAddFunds();
+            } catch (err) {
+                UI.showToast(err.message, 'error');
+            }
+        });
+    }
+
     // ---- KYC Review ----
     function renderKycReview() {
-        const kycs = getKyc().filter(k => k.status === 'pending');
+        const kycs = KycService.getPending();
         main.innerHTML = `
             <h2>🪪 KYC Review</h2>
             ${kycs.map(k => {
-                const u = getUsers().find(u => u.id === k.userId);
+                const u = UserService.getUser(k.userId);
                 return `
                     <div class="card mb-16">
                         <div class="flex-between">
@@ -208,46 +361,43 @@
                             ${k.selfieImage ? `<img src="${k.selfieImage}" style="max-width:100%;max-height:120px;border-radius:8px;" />` : '<div style="color:#666;padding:10px;">No selfie</div>'}
                         </div>
                         <div>
-                            <button class="btn btn-success btn-sm" onclick="window.approveKyc(${k.id})">✅ Approve</button>
-                            <button class="btn btn-danger btn-sm" onclick="window.rejectKyc(${k.id})">❌ Reject</button>
+                            <button class="btn btn-success btn-sm" onclick="approveKyc(${k.id})">✅ Approve</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectKyc(${k.id})">❌ Reject</button>
                         </div>
                     </div>
                 `;
             }).join('') || '<p class="text-muted">No pending KYC submissions.</p>'}
         `;
-        window.approveKyc = function(id) {
-            const kycs = getKyc();
-            const idx = kycs.findIndex(k => k.id === id);
-            if (idx !== -1) {
-                kycs[idx].status = 'approved';
-                kycs[idx].approvedAt = new Date().toISOString();
-                setKyc(kycs);
-                audit('KYC_APPROVED', `Admin approved KYC for user ${kycs[idx].userId}`, getCurrentUser().id);
-                alert('KYC approved.');
-                renderKycReview();
-            }
-        };
-        window.rejectKyc = function(id) {
-            if (!confirm('Reject this KYC?')) return;
-            const kycs = getKyc();
-            const idx = kycs.findIndex(k => k.id === id);
-            if (idx !== -1) {
-                kycs[idx].status = 'rejected';
-                setKyc(kycs);
-                audit('KYC_REJECTED', `Admin rejected KYC for user ${kycs[idx].userId}`, getCurrentUser().id);
-                alert('KYC rejected.');
-                renderKycReview();
-            }
-        };
     }
+
+    window.approveKyc = function(id) {
+        try {
+            KycService.approve(id);
+            UI.showToast('KYC approved.', 'success');
+            renderKycReview();
+        } catch (err) {
+            UI.showToast(err.message, 'error');
+        }
+    };
+
+    window.rejectKyc = function(id) {
+        if (!confirm('Reject this KYC?')) return;
+        try {
+            KycService.reject(id);
+            UI.showToast('KYC rejected.', 'success');
+            renderKycReview();
+        } catch (err) {
+            UI.showToast(err.message, 'error');
+        }
+    };
 
     // ---- Withdrawals Review ----
     function renderWithdrawalsReview() {
-        const withdrawals = getWithdrawals().filter(w => w.status === 'pending');
+        const withdrawals = WithdrawalService.getPending();
         main.innerHTML = `
             <h2>💳 Withdrawals Review</h2>
             ${withdrawals.map(w => {
-                const u = getUsers().find(u => u.id === w.userId);
+                const u = UserService.getUser(w.userId);
                 return `
                     <div class="card mb-16">
                         <div class="flex-between">
@@ -258,83 +408,41 @@
                         <div class="detail-row"><span class="label">Amount</span><span class="value">$${w.amount.toFixed(2)}</span></div>
                         <div class="detail-row"><span class="label">Description</span><span class="value">${w.description || ''}</span></div>
                         <div>
-                            <button class="btn btn-success btn-sm" onclick="window.approveWithdrawal(${w.id})">✅ Approve</button>
-                            <button class="btn btn-danger btn-sm" onclick="window.rejectWithdrawal(${w.id})">❌ Reject</button>
+                            <button class="btn btn-success btn-sm" onclick="approveWithdrawal(${w.id})">✅ Approve</button>
+                            <button class="btn btn-danger btn-sm" onclick="rejectWithdrawal(${w.id})">❌ Reject</button>
                         </div>
                     </div>
                 `;
             }).join('') || '<p class="text-muted">No pending withdrawals.</p>'}
         `;
-        window.approveWithdrawal = function(id) {
-            const withdrawals = getWithdrawals();
-            const idx = withdrawals.findIndex(w => w.id === id);
-            if (idx !== -1) {
-                withdrawals[idx].status = 'approved';
-                const w = withdrawals[idx];
-                const users = getUsers();
-                const uIdx = users.findIndex(u => u.id === w.userId);
-                if (uIdx !== -1) {
-                    const total = users[uIdx].balance + users[uIdx].prize_amount;
-                    if (total >= w.amount) {
-                        let remaining = w.amount;
-                        if (users[uIdx].balance >= remaining) {
-                            users[uIdx].balance -= remaining;
-                        } else {
-                            remaining -= users[uIdx].balance;
-                            users[uIdx].balance = 0;
-                            users[uIdx].prize_amount -= remaining;
-                        }
-                        setUsers(users);
-                        const funding = getFundingRecords();
-                        funding.push({
-                            id: Date.now(),
-                            userId: w.userId,
-                            amount: -w.amount,
-                            type: 'withdrawal',
-                            status: 'completed',
-                            description: `Withdrawal via ${w.method}`,
-                            reference: 'WDL-' + Date.now(),
-                            createdAt: new Date().toISOString()
-                        });
-                        setFundingRecords(funding);
-                        const notifs = getNotifications();
-                        notifs.push({
-                            id: Date.now(),
-                            userId: w.userId,
-                            title: '✅ Withdrawal Approved',
-                            message: `Your withdrawal of $${w.amount.toFixed(2)} has been approved.`,
-                            isRead: false,
-                            createdAt: new Date().toISOString()
-                        });
-                        setNotifications(notifs);
-                        audit('WITHDRAWAL_APPROVED', `Admin approved withdrawal ${w.id} for user ${w.userId}`, getCurrentUser().id);
-                        alert('Withdrawal approved and processed.');
-                    } else {
-                        alert('Insufficient balance to complete withdrawal.');
-                        return;
-                    }
-                }
-                setWithdrawals(withdrawals);
-                renderWithdrawalsReview();
-            }
-        };
-        window.rejectWithdrawal = function(id) {
-            if (!confirm('Reject this withdrawal?')) return;
-            const withdrawals = getWithdrawals();
-            const idx = withdrawals.findIndex(w => w.id === id);
-            if (idx !== -1) {
-                withdrawals[idx].status = 'rejected';
-                setWithdrawals(withdrawals);
-                audit('WITHDRAWAL_REJECTED', `Admin rejected withdrawal ${id}`, getCurrentUser().id);
-                alert('Withdrawal rejected.');
-                renderWithdrawalsReview();
-            }
-        };
     }
+
+    window.approveWithdrawal = async function(id) {
+        const confirm = await UI.confirm('Approve this withdrawal?', 'Confirm Approval');
+        if (!confirm) return;
+        try {
+            WithdrawalService.approve(id);
+            UI.showToast('Withdrawal approved and processed.', 'success');
+            renderWithdrawalsReview();
+        } catch (err) {
+            UI.showToast(err.message, 'error');
+        }
+    };
+
+    window.rejectWithdrawal = function(id) {
+        if (!confirm('Reject this withdrawal?')) return;
+        try {
+            WithdrawalService.reject(id);
+            UI.showToast('Withdrawal rejected.', 'success');
+            renderWithdrawalsReview();
+        } catch (err) {
+            UI.showToast(err.message, 'error');
+        }
+    };
 
     // ---- Announcements ----
     function renderAnnouncements() {
-        const announcements = getAnnouncements();
+        const announcements = AnnouncementService.getAll();
         main.innerHTML = `
             <h2>📢 Announcements</h2>
             <div class="card">
@@ -359,21 +467,17 @@
             e.preventDefault();
             const title = document.getElementById('annTitle').value;
             const message = document.getElementById('annMessage').value;
-            const announcements = getAnnouncements();
-            announcements.push({
-                id: Date.now(),
-                title,
-                message,
-                createdAt: new Date().toISOString()
-            });
-            setAnnouncements(announcements);
-            audit('ANNOUNCEMENT_CREATED', `Admin created announcement: ${title}`, getCurrentUser().id);
-            alert('Announcement posted.');
-            renderAnnouncements();
+            try {
+                AnnouncementService.create(title, message);
+                UI.showToast('Announcement posted.', 'success');
+                renderAnnouncements();
+            } catch (err) {
+                UI.showToast(err.message, 'error');
+            }
         });
     }
 
-    // ---- Import (bulk upload) ----
+    // ---- Import ----
     function renderImport() {
         main.innerHTML = `
             <h2>📂 Bulk Import Users</h2>
@@ -390,17 +494,17 @@
             e.preventDefault();
             const fileInput = document.getElementById('importFile');
             const file = fileInput.files[0];
-            if (!file) { alert('Select a file.'); return; }
+            if (!file) return UI.showToast('Select a file.', 'error');
             const reader = new FileReader();
             reader.onload = function(ev) {
                 const content = ev.target.result;
                 let rows = [];
                 const lines = content.split('\n').filter(l => l.trim());
-                if (lines.length < 2) { alert('File must contain header row and data.'); return; }
+                if (lines.length < 2) return UI.showToast('File must contain header row and data.', 'error');
                 const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
                 const required = ['first_name', 'last_name', 'email', 'password'];
                 const missing = required.filter(r => !headers.includes(r));
-                if (missing.length > 0) {
+                if (missing.length) {
                     document.getElementById('importResult').innerHTML = `<div class="text-danger">❌ Missing columns: ${missing.join(', ')}</div>`;
                     return;
                 }
@@ -411,9 +515,8 @@
                     rows.push(row);
                 }
                 try {
-                    const added = importUsers(rows);
+                    const added = ImportService.importUsers(rows);
                     document.getElementById('importResult').innerHTML = `<div class="text-success">✅ Imported ${added} users successfully.</div>`;
-                    audit('ADMIN_IMPORT', `Admin imported ${added} users`, getCurrentUser().id);
                 } catch (err) {
                     document.getElementById('importResult').innerHTML = `<div class="text-danger">❌ Error: ${err.message}</div>`;
                 }
@@ -422,130 +525,9 @@
         });
     }
 
-    // ---- Schedules (with weekly/monthly) ----
-    function renderSchedules() {
-        const schedules = getFundingSchedules();
-        main.innerHTML = `
-            <h2>📅 Funding Schedules</h2>
-            <div class="card">
-                <h4 style="color:#ffd700;">Create Schedule</h4>
-                <form id="scheduleForm">
-                    <div class="form-group"><label>Name</label><input type="text" id="scheduleName" value="Weekly Friday Funding" required /></div>
-                    <div class="form-group"><label>Amount ($)</label><input type="number" id="scheduleAmount" value="7000" step="1" required /></div>
-                    <div class="form-group"><label>Frequency</label>
-                        <select id="scheduleFrequency">
-                            <option value="weekly">Weekly (Friday)</option>
-                            <option value="monthly">Monthly (1st)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-gold">Create Schedule</button>
-                </form>
-            </div>
-            <div class="card mt-16">
-                <h4 style="color:#ffd700;">Existing Schedules</h4>
-                ${schedules.map(s => `
-                    <div class="flex-between" style="padding:8px 0;border-bottom:1px solid #1a1a3e;">
-                        <span>${s.name} – $${s.amount} (${s.frequency})</span>
-                        <span class="badge badge-${s.status==='active'?'success':'danger'}">${s.status}</span>
-                        <button class="btn btn-secondary btn-sm" onclick="window.toggleSchedule(${s.id})">${s.status==='active'?'Pause':'Resume'}</button>
-                    </div>
-                `).join('') || '<p class="text-muted">No schedules.</p>'}
-            </div>
-        `;
-        document.getElementById('scheduleForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const name = document.getElementById('scheduleName').value;
-            const amount = parseFloat(document.getElementById('scheduleAmount').value);
-            const frequency = document.getElementById('scheduleFrequency').value;
-            const schedules = getFundingSchedules();
-            schedules.push({
-                id: Date.now(),
-                name,
-                amount,
-                frequency,
-                day: frequency === 'weekly' ? 'Friday' : '1st',
-                status: 'active',
-                createdAt: new Date().toISOString()
-            });
-            setFundingSchedules(schedules);
-            audit('FUNDING_SCHEDULE_CREATED', `Admin created ${frequency} schedule: ${name} $${amount}`, getCurrentUser().id);
-            alert('Schedule created!');
-            renderSchedules();
-        });
-    }
-    window.toggleSchedule = function(id) {
-        const schedules = getFundingSchedules();
-        const idx = schedules.findIndex(s => s.id === id);
-        if (idx !== -1) {
-            schedules[idx].status = schedules[idx].status === 'active' ? 'paused' : 'active';
-            setFundingSchedules(schedules);
-            audit('SCHEDULE_TOGGLED', `Admin toggled schedule ${id} to ${schedules[idx].status}`, getCurrentUser().id);
-            renderSchedules();
-        }
-    };
-
-    // ---- Add Funds ----
-    function renderAddFunds() {
-        const users = getUsers().filter(u => u.role === 'user');
-        main.innerHTML = `
-            <h2>💰 Add Funds</h2>
-            <div class="card">
-                <form id="addFundsForm">
-                    <div class="form-group"><label>Select Winner</label>
-                        <select id="fundUser">
-                            ${users.map(u => `<option value="${u.id}">${u.firstName} ${u.lastName} (${u.email})</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="form-group"><label>Amount ($)</label><input type="number" id="fundAmount" step="0.01" required /></div>
-                    <div class="form-group"><label>Description</label><input type="text" id="fundDesc" placeholder="Reason" /></div>
-                    <button type="submit" class="btn btn-gold">Add Funds</button>
-                </form>
-            </div>
-        `;
-        document.getElementById('addFundsForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const userId = parseInt(document.getElementById('fundUser').value);
-            const amount = parseFloat(document.getElementById('fundAmount').value);
-            const desc = document.getElementById('fundDesc').value || 'Manual addition';
-            if (!amount || amount <= 0) { alert('Enter a valid amount.'); return; }
-            const users = getUsers();
-            const idx = users.findIndex(u => u.id === userId);
-            if (idx !== -1) {
-                users[idx].balance += amount;
-                users[idx].prize_amount += amount;
-                setUsers(users);
-                const funding = getFundingRecords();
-                funding.push({
-                    id: Date.now(),
-                    userId: userId,
-                    amount: amount,
-                    type: 'manual',
-                    status: 'completed',
-                    description: desc,
-                    reference: 'MANUAL-' + Date.now(),
-                    createdAt: new Date().toISOString()
-                });
-                setFundingRecords(funding);
-                const notifs = getNotifications();
-                notifs.push({
-                    id: Date.now(),
-                    userId: userId,
-                    title: '💰 Funds Added',
-                    message: `$${amount} has been added to your account.`,
-                    isRead: false,
-                    createdAt: new Date().toISOString()
-                });
-                setNotifications(notifs);
-                audit('FUNDS_ADDED', `Admin added $${amount} to user ${users[idx].email}`, getCurrentUser().id);
-                alert('Funds added!');
-                renderAddFunds();
-            }
-        });
-    }
-
     // ---- Audit ----
     function renderAudit() {
-        const logs = getAuditLogs();
+        const logs = DataService.getAuditLogs();
         main.innerHTML = `
             <h2>📋 Audit Logs</h2>
             <div class="card">
@@ -569,9 +551,9 @@
         `;
     }
 
-    // ---- Admin Support ----
+    // ---- Support ----
     function renderAdminSupport() {
-        const tickets = getSupportTickets();
+        const tickets = DataService.getSupportTickets();
         main.innerHTML = `
             <h2>📞 Support Tickets</h2>
             <div class="card">
@@ -580,14 +562,14 @@
                         <thead><tr><th>ID</th><th>User</th><th>Subject</th><th>Status</th><th>Actions</th></tr></thead>
                         <tbody>
                             ${tickets.map(t => {
-                                const u = getUsers().find(u => u.id === t.userId);
+                                const u = UserService.getUser(t.userId);
                                 return `<tr>
                                     <td>${t.id}</td>
                                     <td>${u ? u.email : 'Unknown'}</td>
                                     <td>${t.subject}</td>
                                     <td><span class="badge badge-${t.status==='open'?'warning':t.status==='resolved'?'success':'muted'}">${t.status}</span></td>
                                     <td>
-                                        <button class="btn btn-success btn-sm" onclick="window.resolveTicket(${t.id})">Resolve</button>
+                                        <button class="btn btn-success btn-sm" onclick="resolveTicket(${t.id})">Resolve</button>
                                     </td>
                                 </tr>`;
                             }).join('')}
@@ -597,16 +579,16 @@
             </div>
         `;
     }
+
     window.resolveTicket = function(id) {
-        const tickets = getSupportTickets();
+        const tickets = DataService.getSupportTickets();
         const idx = tickets.findIndex(t => t.id === id);
-        if (idx !== -1) {
-            tickets[idx].status = 'resolved';
-            setSupportTickets(tickets);
-            audit('TICKET_RESOLVED', `Admin resolved ticket ${id}`, getCurrentUser().id);
-            alert('Ticket resolved.');
-            renderAdminSupport();
-        }
+        if (idx === -1) return;
+        tickets[idx].status = 'resolved';
+        DataService.setSupportTickets(tickets);
+        UI.showToast('Ticket resolved.', 'success');
+        renderAdminSupport();
+        AuthService._audit('TICKET_RESOLVED', `Admin resolved ticket ${id}`, null);
     };
 
     // ---- Settings ----
@@ -615,87 +597,12 @@
             <h2>⚙️ Settings</h2>
             <div class="card">
                 <p class="text-muted">System settings (placeholder).</p>
-                <button class="btn btn-gold" onclick="alert('Settings saved!')">Save</button>
+                <button class="btn btn-gold" onclick="UI.showToast('Settings saved!', 'success')">Save</button>
             </div>
         `;
     }
 
-    // ---- Navigation helper ----
-    window.changeVIP = function(userId, newLevel) {
-        const users = getUsers();
-        const idx = users.findIndex(u => u.id === userId);
-        if (idx !== -1) {
-            const old = users[idx].vip_level;
-            users[idx].vip_level = newLevel;
-            setUsers(users);
-            audit('VIP_CHANGED', `Admin changed VIP of ${users[idx].email} from ${old} to ${newLevel}`, getCurrentUser().id);
-            alert(`VIP level updated to ${newLevel}`);
-            renderWinners();
-        }
-    };
-    window.suspendUser = function(id) {
-        if (!confirm('Suspend this user?')) return;
-        const users = getUsers();
-        const idx = users.findIndex(u => u.id === id);
-        if (idx !== -1) {
-            users[idx].status = 'suspended';
-            setUsers(users);
-            audit('USER_SUSPENDED', `Admin suspended user ${users[idx].email}`, getCurrentUser().id);
-            alert('User suspended.');
-            renderWinners();
-        }
-    };
-    window.viewWinner = function(userId) {
-        const u = getUsers().find(u => u.id === userId);
-        if (!u) return alert('User not found');
-        const funds = getFundingRecords().filter(f => f.userId === userId);
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay active';
-        modal.innerHTML = `
-            <div class="modal-box" style="max-width:600px;">
-                <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
-                <h3>👤 ${u.firstName} ${u.lastName}</h3>
-                <p>Email: ${u.email} • VIP: ${u.vip_level} • Status: ${u.status}</p>
-                <p>Balance: $${(u.balance+u.prize_amount).toFixed(2)}</p>
-                <h4 style="color:#ffd700;margin-top:12px;">Funding History</h4>
-                <div style="max-height:300px;overflow-y:auto;">
-                    ${funds.map(f => `
-                        <div class="flex-between" style="padding:6px 0;border-bottom:1px solid #1a1a3e;cursor:pointer;" onclick="window.showAdminTransaction(${f.id})">
-                            <span>${f.description}</span>
-                            <span>$${f.amount.toFixed(2)}</span>
-                            <span class="text-muted">${new Date(f.createdAt).toLocaleDateString()}</span>
-                        </div>
-                    `).join('') || '<p class="text-muted">No funding.</p>'}
-                </div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.addEventListener('click', function(e) { if (e.target === this) this.remove(); });
-        audit('ADMIN_VIEWED_WINNER', `Admin viewed winner ${u.email}`, getCurrentUser().id);
-    };
-    window.showAdminTransaction = function(id) {
-        const fund = getFundingRecords().find(f => f.id === id);
-        if (!fund) return;
-        const modal = document.createElement('div');
-        modal.className = 'modal-overlay active';
-        modal.innerHTML = `
-            <div class="modal-box">
-                <button class="close-btn" onclick="this.closest('.modal-overlay').remove()">✕</button>
-                <h3>📄 Transaction Details</h3>
-                <div class="detail-row"><span class="label">ID</span><span class="value">${fund.id}</span></div>
-                <div class="detail-row"><span class="label">User</span><span class="value">${getUsers().find(u=>u.id===fund.userId)?.email || 'Unknown'}</span></div>
-                <div class="detail-row"><span class="label">Date</span><span class="value">${new Date(fund.createdAt).toLocaleString()}</span></div>
-                <div class="detail-row"><span class="label">Amount</span><span class="value">$${fund.amount.toFixed(2)}</span></div>
-                <div class="detail-row"><span class="label">Type</span><span class="value">${fund.type}</span></div>
-                <div class="detail-row"><span class="label">Description</span><span class="value">${fund.description}</span></div>
-                <div class="detail-row"><span class="label">Status</span><span class="value"><span class="badge badge-${fund.status==='completed'?'success':'warning'}">${fund.status}</span></span></div>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        modal.addEventListener('click', function(e) { if (e.target === this) this.remove(); });
-        audit('ADMIN_VIEWED_TRANSACTION', `Admin viewed transaction ${fund.id}`, getCurrentUser().id);
-    };
-
+    // ---- Hash change ----
     window.addEventListener('hashchange', render);
     window.addEventListener('load', render);
 })();
